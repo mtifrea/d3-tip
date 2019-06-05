@@ -14,7 +14,7 @@ export default function() {
   var direction   = d3TipDirection,
       offset      = d3TipOffset,
       html        = d3TipHTML,
-      rootElement = document.body,
+      rootElement = null,
       node        = initNode(),
       svg         = null,
       point       = null,
@@ -24,7 +24,7 @@ export default function() {
     svg = getSVGNode(vis)
     if (!svg) return
     point = svg.createSVGPoint()
-    rootElement.appendChild(node)
+    getRootElement().appendChild(node)
   }
 
   // Public - show the tooltip on the screen
@@ -40,10 +40,8 @@ export default function() {
         nodel   = getNodeEl(),
         i       = directions.length,
         coords,
-        scrollTop  = document.documentElement.scrollTop ||
-      rootElement.scrollTop,
-        scrollLeft = document.documentElement.scrollLeft ||
-      rootElement.scrollLeft
+        scrollTop  = getRootElement().scrollTop,
+        scrollLeft = getRootElement().scrollLeft
 
     nodel.html(content)
       .style('opacity', 1).style('pointer-events', 'all')
@@ -145,8 +143,16 @@ export default function() {
   //
   // Returns root node of tip
   tip.rootElement = function(v) {
-    if (!arguments.length) return rootElement
-    rootElement = v == null ? v : functor(v)
+    if (!arguments.length) return getRootElement()
+    var newRootElement = typeof v === 'function' ? v() : v
+
+    if (newRootElement !== rootElement) {
+      rootElement = newRootElement
+      if (node) {
+        // If the node already exists, move it to the new root element
+        getRootElement().appendChild(node)
+      }
+    }
 
     return tip
   }
@@ -265,9 +271,13 @@ export default function() {
     if (node == null) {
       node = initNode()
       // re-add node to DOM
-      rootElement.appendChild(node)
+      getRootElement().appendChild(node)
     }
     return select(node)
+  }
+
+  function getRootElement() {
+    return rootElement || document.documentElement || document.body
   }
 
   // Private - gets the screen coordinates of a shape
